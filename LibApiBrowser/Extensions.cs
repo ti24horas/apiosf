@@ -11,6 +11,11 @@ namespace LibApiBrowser
             return input.Where(a => a.IsPublic);
         }
 
+        public static IEnumerable<MethodDefinition> NotFromProperty(this IEnumerable<MethodDefinition> input)
+        {
+            return input.Where(a => !a.IsGetter && !a.IsSetter);
+        }
+
         public static IEnumerable<TypeReference> AllTypes(this TypeReference p)
         {
             yield return p;

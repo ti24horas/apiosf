@@ -85,6 +85,11 @@ namespace LibApiBrowser.Search.Lucene
                 this.AddMethod(clsId, m);
             }
 
+            foreach (var p in cls.Properties)
+            {
+                this.AddProperty(clsId, p);
+            }
+
             return clsId;
         }
 
@@ -138,7 +143,6 @@ namespace LibApiBrowser.Search.Lucene
         {
             Analyzer a = new DottedAnalyzer();
             var p = new QueryParser(LuceneVersion.LUCENE_48, "name", a);
-            p.Enable_tracing();
 
             return this.Search(p.Parse(input), docTypes);
         }

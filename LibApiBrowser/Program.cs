@@ -60,7 +60,25 @@ namespace LibApiBrowser
             while (true)
             {
                 //Query q = new TermQuery(new Term("name", Console.ReadLine()));
-                var results = svc.Search(Console.ReadLine(), LuceneService.DocumentType.Class, LuceneService.DocumentType.Assembly, LuceneService.DocumentType.Method).ToList();
+                var results = svc.Search(Console.ReadLine(), LuceneService.DocumentType.Class, LuceneService.DocumentType.Assembly, LuceneService.DocumentType.Method | LuceneService.DocumentType.Property).ToList();
+                foreach (var r in results.OrderBy(a =>
+                {
+                    var ordering = a.Get("type");
+                    switch (ordering)
+                    {
+                        case "class":
+                            return 0;
+                        case "method":
+                            return 1;
+                        case "property":
+                            return 2;
+                        default:
+                            return 10;
+                    }
+                }))
+                {
+                    Console.WriteLine(r.Get("name"));
+                }
             }
             Console.ReadLine();
         }

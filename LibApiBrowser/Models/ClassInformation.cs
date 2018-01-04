@@ -22,7 +22,7 @@ namespace LibApiBrowser.Models
             this.AssemblyId = assemblyId;
             this.FullName = t.FullName.Replace("/", "+");
             this.ClassName = t.Name;
-            this.Methods = t.Methods.Public()
+            this.Methods = t.Methods.Public().NotFromProperty()
                 .Select(c => new MethodInformation(c)).ToArray();
             this.Properties = t.Properties.Where(a => (a.GetMethod != null && a.GetMethod.IsPublic && a.GetMethod.IsGetter) || (a.SetMethod != null && a.SetMethod.IsPublic && a.SetMethod.IsSetter)).Select(c => new PropertyInformation(c)).ToArray();
 
