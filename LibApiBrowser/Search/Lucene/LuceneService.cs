@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using LibApiBrowser.Models;
 using Lucene.Net.Analysis;
-using Lucene.Net.Analysis.Core;
-using Lucene.Net.Analysis.Standard;
-using Lucene.Net.Analysis.TokenAttributes;
-using Lucene.Net.Analysis.Util;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.QueryParsers.Classic;
@@ -14,65 +10,22 @@ using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
 
-namespace LibApiBrowser
+namespace LibApiBrowser.Search.Lucene
 {
-    public class DottedAnalyzer : Analyzer
-    {
-        protected override TokenStreamComponents CreateComponents(string fieldName, TextReader reader)
-        {
-            if (fieldName == "version" || fieldName == "type")
-            {
-                return new TokenStreamComponents(new KeywordTokenizer(reader));
-            }
-
-            return new TokenStreamComponents(new DotTokeninzer(LuceneVersion.LUCENE_48, reader));
-        }
-
-        private class DotTokeninzer : CharTokenizer
-        {
-            public DotTokeninzer(LuceneVersion matchVersion, TextReader input) : base(matchVersion, input)
-            {
-            }
-
-            public DotTokeninzer(LuceneVersion matchVersion, AttributeFactory factory, TextReader input) : base(matchVersion, factory, input)
-            {
-            }
-
-            protected override bool IsTokenChar(int c)
-            {
-                return char.IsLetterOrDigit((char)c);
-            }
-        }
-    }
-
-    public class TestDottedAnalyzer
-    {
-        public static void Test()
-        {
-            var an = new DottedAnalyzer();
-            var stream = an.GetTokenStream(null, new StringReader("ClassLibraryTest.Class1"));
-            stream.Reset();
-            while (stream.IncrementToken())
-            {
-                if (stream.HasAttributes)
-                {
-                    var text = stream.GetAttribute<ICharTermAttribute>();
-                }
-            }
-        }
-    }
     public class LuceneService
     {
         private IndexWriter writer;
+        private string dir;
 
         private LuceneService(string dir)
         {
+            this.dir = dir;
         }
 
         public IDisposable BeginWrite()
         {
             Analyzer a = new DottedAnalyzer();
-            this.writer = new IndexWriter(FSDirectory.Open("p:\\lucene"), new IndexWriterConfig(LuceneVersion.LUCENE_48, a));
+            this.writer = new IndexWriter(FSDirectory.Open(this.dir), new IndexWriterConfig(LuceneVersion.LUCENE_48, a));
             return writer;
         }
 
@@ -161,6 +114,21 @@ namespace LibApiBrowser
             }
         }
 
+        public void AddProperty(Guid classId, PropertyInformation property)
+        {
+            var propertyId = Guid.NewGuid();
+            this.writer.AddDocument(new Document
+            {
+                new StringField("_id", propertyId.ToString(), Field.Store.NO),
+                new StringField("_classId", classId.ToString(), Field.Store.NO),
+                new TextField("name", property.Name, Field.Store.YES),
+                new TextField("propertyType", property.Type, Field.Store.YES),
+                new StoredField("HasGetter", property.HasGetter.ToString()),
+                new StoredField("HasSetter", property.HasGetter.ToString()),
+                new StringField("type", "Property", Field.Store.YES)
+            });
+        }
+
         public static LuceneService Create(string dir)
         {
             return new LuceneService(dir);
@@ -177,7 +145,7 @@ namespace LibApiBrowser
 
         public IEnumerable<Document> Search(Query query, params DocumentType[] docTypes)
         {
-            using (var reader = DirectoryReader.Open(FSDirectory.Open("p:\\lucene")))
+            using (var reader = DirectoryReader.Open(FSDirectory.Open(this.dir)))
             {
                 var s = new IndexSearcher(reader);
 
